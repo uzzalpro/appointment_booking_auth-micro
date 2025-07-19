@@ -11,6 +11,10 @@ from fastapi import Depends, HTTPException, status, BackgroundTasks, FastAPI, Qu
 from sqlalchemy.exc import IntegrityError
 from fastapi.datastructures import UploadFile
 from sqlalchemy.orm import joinedload
+# from app.services.user_info_service_executor import process_message
+
+from app.services.message_broker_service import RabbitMQHandler
+
 
 def is_unique_email(db: Session, email: str) -> bool:
     return not db.query(UserModel).filter_by(email=email).first()
@@ -18,6 +22,38 @@ def is_unique_email(db: Session, email: str) -> bool:
 
 def is_unique_mobile(db: Session, mobile: str) -> bool:
     return not db.query(UserModel).filter_by(mobile=mobile).first()
+
+
+# def create_user(db: Session, user_data: UserCreateSchema) -> UserModel:
+#     if not is_unique_email(db, user_data.email):
+#         raise HTTPException(status_code=400, detail="Email already registered")
+#     if not is_unique_mobile(db, user_data.mobile):
+#         raise HTTPException(status_code=400, detail="Mobile number already in use")
+
+#     hashed_pw = get_password_hash(user_data.password)
+#     user = UserModel(
+#         full_name=user_data.full_name,
+#         email=user_data.email,
+#         mobile=user_data.mobile,
+#         hashed_password=hashed_pw,
+#         user_type=user_data.user_type,
+#         division=user_data.division,
+#         district=user_data.district,
+#         thana=user_data.thana,
+#         license_number=user_data.license_number,
+#         experience_years=user_data.experience_years,
+#         consultation_fee=user_data.consultation_fee,
+#         available_timeslots=user_data.available_timeslots,
+#         status=user_data.status
+#     )
+#     db.add(user)
+#     db.commit()
+#     db.refresh(user)
+
+#     if user:
+#         process_message(user)
+#     return user
+
 
 
 def create_user(db: Session, user_data: UserCreateSchema) -> UserModel:
@@ -45,7 +81,24 @@ def create_user(db: Session, user_data: UserCreateSchema) -> UserModel:
     db.add(user)
     db.commit()
     db.refresh(user)
+
+    # ✅ Publish to RabbitMQ
+    if user:
+        message = {
+            "event": "user_created",
+            "data": {
+                "user_id": user.id,
+                "full_name": user.full_name,
+                "email": user.email,
+                "mobile": user.mobile,
+                "user_type": user.user_type,
+                "status": user.status
+            }
+        }
+        RabbitMQHandler().publish(queue_name="user-info-queue", message=message)
+
     return user
+
 
 
 def get_user(db: Session, user_id: int) -> Optional[UserModel]:
@@ -139,3 +192,21 @@ def update_doctor_by_admin(
         raise HTTPException(status_code=400, detail="Email or mobile already in use")
 
     return doctor
+
+
+def get_response(execution_id: int, db: Session): 
+    # api_response = db.query(ApiResponseModel).filter(ApiResponseModel.execution_id == execution_id).first()
+    # execution = db.query(ExecutionHistoryModel).filter(ExecutionHistoryModel.id == execution_id).first()
+    
+    # if(api_response == None):
+    #     api_response_schema = ApiResponseSchema(passed=False, reason=execution.message)
+    #     response = ResponseSchema(status='failed', data=api_response_schema)
+    #     return response
+    # print('got response for execution id: ', execution_id, '. Response: ', api_response)
+    # api_response_schema = ApiResponseSchema.model_validate(api_response)
+    # api_response_schema.passed = execution.is_successful
+    # api_response_schema.reason = execution.message
+    # response = ResponseSchema(message='', data=api_response_schema) 
+    
+    # return response
+    pass

@@ -3,7 +3,7 @@ import json
 from app import start_application
 
 from app.services.message_broker_service import RabbitMQHandler
-from app.services.api_test_executor import execute_api_request, start_consumer
+from app.services.user_info_service_executor import start_consumer
 
 app = start_application()
 

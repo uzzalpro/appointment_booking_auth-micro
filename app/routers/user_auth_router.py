@@ -19,7 +19,7 @@ from app.utils.validators import validate_image_file, validate_image
 from dotenv import load_dotenv
 from app.utils.file_upload import save_uploaded_file
 from app.utils.location_data import get_upazilas
-from app.services.user_service import (create_user, get_user, update_user)
+from app.services.user_service import (create_user, get_user, update_user, get_response)
 import time
 
 UPLOAD_DIR = "static/uploads"
@@ -40,7 +40,10 @@ def register_user(payload: UserCreateSchema, db: Session = Depends(get_db)):
         raise HTTPException(status_code=422, detail=str(e))
     except Exception as e:
         raise HTTPException(status_code=500, detail="Internal server error")
-
+    
+@user_auth_router.get("/user-register/execution/{execution_id}/response", response_model=ResponseSchema)
+async def get_execution_response(execution_id: int, user_id: int = Depends(get_current_user_id), db: Session = Depends(get_db)): 
+    return get_response(execution_id=execution_id, db=db)
 
 @user_auth_router.get("/get-user/{user_id}", response_model=UserOutSchema, status_code=status.HTTP_200_OK)
 def get_user_info(user_id: int, db: Session = Depends(get_db)):
@@ -228,93 +231,3 @@ Doctor manage their schedule(profile), view their appointments, and update appoi
 admin manage all appointments, doctors, and generate reports
 """
 
-
-
-# @user_auth_router.post("/user-register", response_model=ResponseSchema, status_code=status.HTTP_201_CREATED)
-# async def register(
-#     full_name: str = Form(...),
-#     email: str = Form(...),
-#     mobile: str = Form(...),
-#     password: str = Form(...),
-#     user_type: str = Form(...),
-#     division: str = Form(None),
-#     district: str = Form(None),
-#     thana: str = Form(None),
-#     license_number: str = Form(None),
-#     experience_years: str = Form(None),
-#     consultation_fee: str = Form(None),
-#     profile_image: UploadFile = File(None),
-#     db: Session = Depends(get_db)
-# ):
-#     try:
-#         # Convert types
-#         try:
-#             user_type_enum = UserType(user_type.lower())
-#         except ValueError:
-#             raise HTTPException(status_code=422, detail=f"Invalid user_type: {user_type}")
-        
-#         experience_years_int = int(experience_years) if experience_years and experience_years.strip() else None
-#         consultation_fee_int = int(consultation_fee) if consultation_fee and consultation_fee.strip() else None
-
-#         # Validate phone
-#         if not mobile.startswith("+") or not mobile[1:].isdigit():
-#             raise HTTPException(status_code=422, detail="Mobile must start with '+' and digits only")
-
-#         # Check user exists
-#         existing = db.query(UserModel).filter(
-#             (UserModel.email == email) | (UserModel.mobile == mobile)
-#         ).first()
-#         if existing:
-#             raise HTTPException(status_code=400, detail="User already exists")
-
-#         # Validate location
-#         if thana and (not division or not district):
-#             raise HTTPException(status_code=422, detail="Thana needs both division and district")
-#         if thana:
-#             valid_upazilas = get_upazilas(division, district)
-#             if thana not in valid_upazilas:
-#                 raise HTTPException(status_code=422, detail=f"Invalid thana for {district}, {division}")
-
-#         # Validate doctor fields
-#         if user_type_enum == UserType.DOCTOR:
-#             if not all([license_number, experience_years_int is not None, consultation_fee_int is not None]):
-#                 raise HTTPException(status_code=422, detail="Doctor fields are required")
-
-#         # Save image or default
-#         if profile_image:
-#             profile_image_path = await save_uploaded_file(profile_image)
-#         else:
-#             profile_image_path = "default.jpg"
-
-#         # Create user
-#         user = UserModel(
-#             full_name=full_name,
-#             email=email,
-#             mobile=mobile,
-#             hashed_password=get_password_hash(password),
-#             user_type=user_type_enum,
-#             division=division,
-#             district=district,
-#             thana=thana,
-#             profile_image=profile_image_path,
-#             license_number=license_number,
-#             experience_years=experience_years_int,
-#             consultation_fee=consultation_fee_int,
-#             status=StatusType.ACTIVE
-#         )
-#         db.add(user)
-#         db.commit()
-#         db.refresh(user)
-
-#         return ResponseSchema(
-#             success=True,
-#             message="User registered successfully",
-#             data={"id": user.id, "email": user.email, "user_type": user.user_type.value}
-#         )
-
-#     except HTTPException:
-#         db.rollback()
-#         raise
-#     except Exception as e:
-#         db.rollback()
-#         raise HTTPException(status_code=500, detail=f"Registration failed: {str(e)}")

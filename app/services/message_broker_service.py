@@ -12,8 +12,8 @@ class RabbitMQHandler(object):
     def __init__(self):
         self.credentials = pika.PlainCredentials(config.MESSAGE_BROKER_USER, config.MESSAGE_BROKER_PASSWORD)
         self.properties = pika.BasicProperties(delivery_mode=pika.DeliveryMode.Persistent)
-        self.exchange_name = 'api-testing'
-        self.queue_name = 'api-testing-queue'
+        self.exchange_name = 'user-info'
+        self.queue_name = 'user-info-queue'
 
         
         

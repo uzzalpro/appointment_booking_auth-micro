@@ -26,6 +26,11 @@ class Config():
     POSTGRES_SCHEMA: str = os.getenv("POSTGRES_SCHEMA", "public")
     DATABASE_URL = f"postgresql://{POSTGRES_USER}:{POSTGRES_PASSWORD}@{POSTGRES_SERVER}:{POSTGRES_PORT}/{POSTGRES_DB}"
 
+    MESSAGE_BROKER_HOST: str = os.getenv("MESSAGE_BROKER_HOST", "localhost")
+    MESSAGE_BROKER_PORT: str = os.getenv("MESSAGE_BROKER_PORT", "5672")
+    MESSAGE_BROKER_USER: str = os.getenv("MESSAGE_BROKER_USER", "user")
+    MESSAGE_BROKER_PASSWORD: str = os.getenv("MESSAGE_BROKER_PASSWORD", "password")
+
     CELERY = {
         "broker_url": os.getenv("BROKER_URL"),
         "redbeat_redis_url": os.getenv("REDBEAT_REDIS_URL")
