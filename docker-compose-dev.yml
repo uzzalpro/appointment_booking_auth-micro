@@ -1,0 +1,117 @@
+version: "3.8"
+
+services:
+  # frontend:
+  #   ports:
+  #     - 3173:4173
+  #   image: frontend-dev
+    # volumes:
+    #   - /home/syed/chrome-extension-qaclan.zip:/app/public/chrome-extension-qaclan.zip
+  common: &default_image
+    build:
+      context: .
+      dockerfile: Dockerfile.dev
+    image: auth-service-dev:latest
+
+
+  auth-service:
+    <<: *default_image
+    ports:
+      - "3004:8000"
+    env_file:
+      - .env.dev   
+    volumes:
+      - ./files:/app/static/uploads
+    depends_on:
+      - db
+    command: ["bash", "-c", "alembic upgrade head && uvicorn main:app --host 0.0.0.0 --port 8000"]
+
+
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: BA123456
+      POSTGRES_DB: business_automation
+    volumes:
+      - postgres_data_dev:/var/lib/postgresql/data
+    ports:
+      - "3432:5432"
+  rabbitmq:
+    image: rabbitmq:3-management
+    ports:
+      - "3672:5672" # AMQP port
+      - "35672:15672" # Management UI port
+    environment:
+      RABBITMQ_DEFAULT_USER: user
+      RABBITMQ_DEFAULT_PASS: password
+    volumes:
+      - rabbitmq_data_dev:/var/lib/rabbitmq
+      - rabbitmq_log:/var/log/rabbitmq
+    healthcheck:
+      test: ["CMD", "rabbitmqctl", "status"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:latest
+    container_name: redis-dev
+    command: ["redis-server", "--requirepass", "yourpassword"]
+    ports:
+      - "127.0.0.1:3379:6379"
+    volumes:
+      - redis-data_dev:/data
+  worker:
+    <<: *default_image
+    container_name: celery_worker_dev
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env.dev
+    volumes:
+      - ./files:/app/static/uploads
+    command: celery -A app.worker worker --loglevel=info
+
+
+  beat:
+    <<: *default_image
+    container_name: celery_beat_dev
+    depends_on:
+      - redis
+      - db
+    env_file:
+      - .env.dev
+    volumes:
+      - ./files:/app/static/uploads
+    command: celery -A app.worker beat --loglevel=info --max-interval=30 -S redbeat.RedBeatScheduler
+
+volumes:
+  rabbitmq_data_dev:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/rabbitmq_data_dev
+
+  rabbitmq_log:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/rabbitmq_log_dev
+
+  postgres_data_dev:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/postgres_data_dev
+
+  redis-data_dev:
+    driver: local
+    driver_opts:
+      type: none
+      o: bind
+      device: ./data/redis-data_dev

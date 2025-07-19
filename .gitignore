@@ -1,0 +1,33 @@
+env/
+.venv/
+.venv
+.vscode/
+/venv-py311
+__pycache__
+__pycache__/*
+*/__pycache__/*
+app/static/uploads/*
+*/uploads/*
+*.jpg
+*.png
+*.pyc
+/venv
+./app/static/uploads/*
+
+app/static/uploads/*
+!app/static/uploads/.gitkeep
+
+.python-version
+data/rabbitmq_data_dev/*
+data/postgres_data_dev/*
+data/redis-data_dev/*
+data/rabbitmq_log_dev/*
+
+# !data/rabbitmq_data_dev/.gitkeep
+# !data/postgres_data_dev/.gitkeep
+# !data/redis-data_dev/.gitkeep
+# !data/rabbitmq_log_dev/.gitkeep
+venv_py311/*
+*/venv_py311/*
+.codegpt
+files/*
